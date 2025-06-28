@@ -1,0 +1,31 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Start Competition Service",
+    "version": "1.0.0",
+    "description": "API para iniciar una competencia diaria de posts con más likes."
+  },
+  "paths": {
+    "/compe/start": {
+      "post": {
+        "summary": "Inicia una nueva competencia de posts.",
+        "responses": {
+          "200": {
+            "description": "Competencia iniciada correctamente.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "competition_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
