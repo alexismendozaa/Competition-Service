@@ -1,0 +1,72 @@
+services:
+  end-competition-ms:
+    build:
+      context: ./end-competition-ms
+    image: alexismendozaa/end-competition-ms:latest
+    ports:
+      - "5026:3026"
+    networks:
+      - competitions_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  history-competition-ms:
+    build:
+      context: ./history-competition-ms
+    image: alexismendozaa/history-competition-ms:latest
+    ports:
+      - "5027:3027"
+    networks:
+      - competitions_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  select-competition-ms:
+    build:
+      context: ./select-competition-ms
+    image: alexismendozaa/select-competition-ms:latest
+    ports:
+      - "5024:3024"
+    networks:
+      - competitions_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  start-competition-ms:
+    build:
+      context: ./start-competition-ms
+    image: alexismendozaa/start-competition-ms:latest
+    ports:
+      - "5023:3023"
+    networks:
+      - competitions_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  win-competition-ms:
+    build:
+      context: ./win-competition-ms
+    image: alexismendozaa/win-competition-ms:latest
+    ports:
+      - "5028:3028"
+    networks:
+      - competitions_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - competitions_network
+
+networks:
+  competitions_network:
+    driver: bridge
