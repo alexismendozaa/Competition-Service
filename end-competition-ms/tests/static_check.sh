@@ -1,4 +1,4 @@
-echo "Iniciando revisión estática de sintaxis con pylint... "
+echo "Iniciando revisión estática de sintaxis con pylint..."
 
 find .. -type f -name "*.py" ! -path "*/__pycache__/*" ! -path "*/venv/*" ! -path "*/env/*" > files.txt
 

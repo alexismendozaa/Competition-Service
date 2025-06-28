@@ -58,7 +58,7 @@ jobs:
 
       - name: Run static check
         if: steps.changes.outputs.changed == 'true'
-        run: bash ${{ matrix.service }}/tests/static-check.sh
+        run: bash ${{ matrix.service }}/tests/static_check.sh
 
   #### 2. BUILD ####
   build:
