@@ -200,10 +200,14 @@ jobs:
         run: |
           if [[ "${{ github.ref }}" == "refs/heads/test" ]]; then
             echo "host=${{ secrets.EC2_QA }}" >> $GITHUB_OUTPUT
-            echo "${{ secrets.SSH_KEY_QA }}" >> $GITHUB_OUTPUT
+            echo "key<<EOF" >> $GITHUB_OUTPUT
+            printf "%s\n" "${{ secrets.SSH_KEY_QA }}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "host=${{ secrets.EC2_PROD }}" >> $GITHUB_OUTPUT
-            echo "${{ secrets.SSH_KEY_PROD }}" >> $GITHUB_OUTPUT
+            echo "key<<EOF" >> $GITHUB_OUTPUT
+            printf "%s\n" "${{ secrets.SSH_KEY_PROD }}" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy updated microservice to EC2 via SSH
