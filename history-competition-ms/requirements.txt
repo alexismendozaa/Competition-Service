@@ -1,0 +1,6 @@
+flask
+flask-cors
+flask-swagger-ui
+psycopg2-binary
+redis
+python-dotenv
