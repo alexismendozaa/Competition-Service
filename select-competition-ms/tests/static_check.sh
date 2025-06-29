@@ -9,4 +9,4 @@ done < files.txt
 
 rm files.txt
 
-echo "Revisión completada."
+echo "Revisión completada." 
