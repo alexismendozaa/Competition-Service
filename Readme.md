@@ -1,6 +1,6 @@
 # Competitions-Service
 
-SneakRush is a distributed e-commerce platform specialized in flash sales of sneakers. This project follows a microservices architecture, with each service handling a specific business domain and implemented in different programming languages.
+This project follows a microservices architecture, with each service handling a specific business domain and implemented in python.
 
 ## Features
 
