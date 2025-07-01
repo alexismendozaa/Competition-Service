@@ -161,10 +161,11 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         run: docker push alexismendozaa/${{ matrix.service }}:latest
 
-  #### 4. DEPLOY ####
-  deploy:
+  #### 4. DEPLOY TEST ####
+  deploy_test:
     runs-on: ubuntu-latest
     needs: push
+    if: github.ref == 'refs/heads/test'
     strategy:
       matrix:
         service:
@@ -175,60 +176,157 @@ jobs:
           - win-competition-ms
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Detect changes for service
-        id: changes
-        run: |
-          git fetch --prune --unshallow || git fetch --all
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            git fetch origin ${{ github.base_ref }}
-            CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep "^${{ matrix.service }}/" || true)
-          else
-            CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^${{ matrix.service }}/" || true)
-          fi
-          if [[ -n "$CHANGED" ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Seleccionar ambiente y SSH key
-        if: steps.changes.outputs.changed == 'true'
-        id: select-env
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/test" ]]; then
-            echo "host=${{ secrets.EC2_QA }}" >> $GITHUB_OUTPUT
-            echo "key<<EOF" >> $GITHUB_OUTPUT
-            printf "%s\n" "${{ secrets.SSH_KEY_QA }}" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "host=${{ secrets.EC2_PROD }}" >> $GITHUB_OUTPUT
-            echo "key<<EOF" >> $GITHUB_OUTPUT
-            printf "%s\n" "${{ secrets.SSH_KEY_PROD }}" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Deploy updated microservice to EC2 via SSH
-        if: steps.changes.outputs.changed == 'true'
+      - name: Deploy updated microservice to EC2 TEST via SSH
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ steps.select-env.outputs.host }}
+          host: ${{ secrets.EC2_QA }}
           username: ubuntu
-          key: ${{ steps.select-env.outputs.key }}
+          key: ${{ secrets.SSH_KEY_QA }}
           port: 22
           script: |
-            # 1. Crear la red si no existe
             docker network inspect competitions_network >/dev/null 2>&1 || docker network create competitions_network
 
-            # 2. Levantar Redis si no existe/corriendo
             docker ps -a --format '{{.Names}}' | grep -qw redis || \
               docker run -d --name redis --network competitions_network -p 6379:6379 redis:latest
 
             docker start redis || true
 
-            # 3. Borrar el microservicio si existe
+            docker rm -f ${{ matrix.service }} || true
+
+            export DB_HOST='${{ secrets.DB_HOST }}'
+            export DB_USER='${{ secrets.DB_USER }}'
+            export DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
+            export DB_COMMENTS='${{ secrets.DB_COMMENTS }}'
+            export DB_USERS='${{ secrets.DB_USERS }}'
+            export DB_LIKES='${{ secrets.DB_LIKES }}'
+            export DB_POST='${{ secrets.DB_POST }}'
+            export DB_SSL='${{ secrets.DB_SSL }}'
+            export DB_PORT='${{ secrets.DB_PORT }}'
+            export JWT_SECRET='${{ secrets.JWT_SECRET }}'
+            export REDIS_HOST='redis'
+            export REDIS_PORT='6379'
+
+            if [ "${{ matrix.service }}" = "end-competition-ms" ]; then
+              docker run -d --name end-competition-ms \
+                --network competitions_network \
+                -p 5026:3026 \
+                -e DB_HOST=$DB_HOST \
+                -e DB_USER=$DB_USER \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e DB_COMMENTS=$DB_COMMENTS \
+                -e DB_USERS=$DB_USERS \
+                -e DB_LIKES=$DB_LIKES \
+                -e DB_POST=$DB_POST \
+                -e DB_SSL=$DB_SSL \
+                -e DB_PORT=$DB_PORT \
+                -e JWT_SECRET=$JWT_SECRET \
+                -e REDIS_HOST=$REDIS_HOST \
+                -e REDIS_PORT=$REDIS_PORT \
+                alexismendozaa/end-competition-ms:latest
+
+            elif [ "${{ matrix.service }}" = "history-competition-ms" ]; then
+              docker run -d --name history-competition-ms \
+                --network competitions_network \
+                -p 5027:3027 \
+                -e DB_HOST=$DB_HOST \
+                -e DB_USER=$DB_USER \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e DB_COMMENTS=$DB_COMMENTS \
+                -e DB_USERS=$DB_USERS \
+                -e DB_LIKES=$DB_LIKES \
+                -e DB_POST=$DB_POST \
+                -e DB_SSL=$DB_SSL \
+                -e DB_PORT=$DB_PORT \
+                -e JWT_SECRET=$JWT_SECRET \
+                -e REDIS_HOST=$REDIS_HOST \
+                -e REDIS_PORT=$REDIS_PORT \
+                alexismendozaa/history-competition-ms:latest
+
+            elif [ "${{ matrix.service }}" = "select-competition-ms" ]; then
+              docker run -d --name select-competition-ms \
+                --network competitions_network \
+                -p 5024:3024 \
+                -e DB_HOST=$DB_HOST \
+                -e DB_USER=$DB_USER \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e DB_COMMENTS=$DB_COMMENTS \
+                -e DB_USERS=$DB_USERS \
+                -e DB_LIKES=$DB_LIKES \
+                -e DB_POST=$DB_POST \
+                -e DB_SSL=$DB_SSL \
+                -e DB_PORT=$DB_PORT \
+                -e JWT_SECRET=$JWT_SECRET \
+                -e REDIS_HOST=$REDIS_HOST \
+                -e REDIS_PORT=$REDIS_PORT \
+                alexismendozaa/select-competition-ms:latest
+
+            elif [ "${{ matrix.service }}" = "start-competition-ms" ]; then
+              docker run -d --name start-competition-ms \
+                --network competitions_network \
+                -p 5023:3023 \
+                -e DB_HOST=$DB_HOST \
+                -e DB_USER=$DB_USER \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e DB_COMMENTS=$DB_COMMENTS \
+                -e DB_USERS=$DB_USERS \
+                -e DB_LIKES=$DB_LIKES \
+                -e DB_POST=$DB_POST \
+                -e DB_SSL=$DB_SSL \
+                -e DB_PORT=$DB_PORT \
+                -e JWT_SECRET=$JWT_SECRET \
+                -e REDIS_HOST=$REDIS_HOST \
+                -e REDIS_PORT=$REDIS_PORT \
+                alexismendozaa/start-competition-ms:latest
+
+            elif [ "${{ matrix.service }}" = "win-competition-ms" ]; then
+              docker run -d --name win-competition-ms \
+                --network competitions_network \
+                -p 5028:3028 \
+                -e DB_HOST=$DB_HOST \
+                -e DB_USER=$DB_USER \
+                -e DB_PASSWORD=$DB_PASSWORD \
+                -e DB_COMMENTS=$DB_COMMENTS \
+                -e DB_USERS=$DB_USERS \
+                -e DB_LIKES=$DB_LIKES \
+                -e DB_POST=$DB_POST \
+                -e DB_SSL=$DB_SSL \
+                -e DB_PORT=$DB_PORT \
+                -e JWT_SECRET=$JWT_SECRET \
+                -e REDIS_HOST=$REDIS_HOST \
+                -e REDIS_PORT=$REDIS_PORT \
+                alexismendozaa/win-competition-ms:latest
+            fi
+
+  #### 5. DEPLOY PROD ####
+  deploy_prod:
+    runs-on: ubuntu-latest
+    needs: push
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        service:
+          - end-competition-ms
+          - history-competition-ms
+          - select-competition-ms
+          - start-competition-ms
+          - win-competition-ms
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy updated microservice to EC2 PROD via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_PROD }}
+          username: ubuntu
+          key: ${{ secrets.SSH_KEY_PROD }}
+          port: 22
+          script: |
+            docker network inspect competitions_network >/dev/null 2>&1 || docker network create competitions_network
+
+            docker ps -a --format '{{.Names}}' | grep -qw redis || \
+              docker run -d --name redis --network competitions_network -p 6379:6379 redis:latest
+
+            docker start redis || true
+
             docker rm -f ${{ matrix.service }} || true
 
             export DB_HOST='${{ secrets.DB_HOST }}'
